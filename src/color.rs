@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct Color {
     pub r: f64,
     pub g: f64,
@@ -13,15 +14,5 @@ impl Color {
             b,
             a,
         }
-    }
-
-    pub fn to_int(&self) -> (u8, u8, u8, u8) {
-        // TODO: Make this safe
-        (
-            (self.r * 255.0) as u8,
-            (self.g * 255.0) as u8,
-            (self.b * 255.0) as u8,
-            (self.a * 255.0) as u8,
-        )
     }
 }

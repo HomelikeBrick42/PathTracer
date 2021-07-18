@@ -2,6 +2,7 @@ use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
 use crate::color::{ Color };
 
+#[derive(Clone, Copy)]
 pub struct Sphere {
     pub position: Vector3,
     pub radius: f64,
