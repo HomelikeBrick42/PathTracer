@@ -2,6 +2,7 @@ mod vector;
 mod ray;
 mod sphere;
 mod color;
+mod hit;
 
 use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
@@ -54,6 +55,8 @@ fn main() {
     let camera_right = Vector3::new(1.0, 0.0, 0.0).normalized();
     let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
 
+    let light_dir = Vector3::new(0.4, -1.0, -0.6).normalized();
+
     let clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
     let mut pixels = vec![clear_color; (width * height) as usize];
 
@@ -71,8 +74,8 @@ fn main() {
             );
 
             match sphere.intersect(&ray) {
-                Some((normal, _color)) => {
-                    pixels[(x + y * width) as usize] = Color::new(normal.x * 0.5 + 0.5, normal.y * 0.5 + 0.5, normal.z * 0.5 + 0.5, 1.0);
+                Some(hit) => {
+                    pixels[(x + y * width) as usize] = hit.color * Vector3::dot(&light_dir, &hit.normal);
                 },
                 _ => {},
             }

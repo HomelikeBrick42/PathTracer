@@ -1,5 +1,5 @@
 use crate::vector::{ Vector3 };
-use crate::color::{ Color };
+use crate::hit::{ Hit };
 
 #[derive(Clone, Copy)]
 pub struct Ray {
@@ -17,5 +17,5 @@ impl Ray {
 }
 
 pub trait Intersectable {
-    fn intersect(&self, ray: &Ray) -> Option<(Vector3, Color)>;
+    fn intersect(&self, ray: &Ray) -> Option<Hit>;
 }

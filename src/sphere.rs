@@ -1,6 +1,7 @@
 use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
 use crate::color::{ Color };
+use crate::hit::{ Hit };
 
 #[derive(Clone, Copy)]
 pub struct Sphere {
@@ -18,7 +19,7 @@ impl Sphere {
 }
 
 impl Intersectable for Sphere {
-    fn intersect(&self, ray: &Ray) -> Option<(Vector3, Color)> {
+    fn intersect(&self, ray: &Ray) -> Option<Hit> {
         let l = self.position - ray.origin;
 
         let tca = Vector3::dot(&l, &ray.direction);
@@ -53,6 +54,7 @@ impl Intersectable for Sphere {
         let t = t0;
 
         let hit_point = ray.origin + (ray.direction * t);
-        return Option::from(((hit_point - self.position) / self.radius, Color::new(1.0, 1.0, 1.0, 1.0)));
+        let normal = (ray.origin - hit_point).normalized();
+        return Option::from(Hit::new(hit_point, normal, Color::new(1.0, 1.0, 1.0, 1.0)));
     }
 }
