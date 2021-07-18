@@ -1,6 +1,6 @@
-use crate::vector::Vector3;
+use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
-use crate::color::Color;
+use crate::color::{ Color };
 
 pub struct Sphere {
     pub position: Vector3,
@@ -21,9 +21,11 @@ impl Intersectable for Sphere {
         let l = self.position - ray.origin;
 
         let tca = Vector3::dot(&l, &ray.direction);
-        if tca < 0.0 {
-            return Option::None;
-        }
+
+        // TODO: This was in a tutorial uncomment it to see what it does
+        // if tca < 0.0 {
+        //     return Option::None;
+        // }
 
         let d2 = Vector3::dot(&l, &l) - tca * tca;
         if d2 > self.radius * self.radius {

@@ -1,5 +1,5 @@
-use crate::vector::Vector3;
-use crate::color::Color;
+use crate::vector::{ Vector3 };
+use crate::color::{ Color };
 
 #[derive(Clone, Copy)]
 pub struct Ray {

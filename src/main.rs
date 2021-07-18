@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)]
+
 mod vector;
 mod ray;
 mod sphere;
@@ -6,7 +8,7 @@ mod color;
 use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
 use crate::sphere::{ Sphere };
-use crate::color::Color;
+use crate::color::{ Color };
 
 fn main() {
     let sphere = Sphere::new(Vector3::new(0.0, 0.0, 0.0), 1.0);
