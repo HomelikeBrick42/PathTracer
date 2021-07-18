@@ -47,25 +47,37 @@ struct BMPHeader {
 
 fn main() {
     let sphere = Sphere::new(Vector3::new(0.0, 0.0, 0.0), 1.0);
-    let ray = Ray::new(Vector3::new(2.0, 0.0, 0.0), Vector3::new(-1.0, 0.0, 0.0).normalized());
-
-    match sphere.intersect(&ray) {
-        Some((normal, color)) => {
-            println!("{}, {}, {}", normal.x, normal.y, normal.z);
-            println!("{}, {}, {}, {}", color.r, color.g, color.b, color.a);
-        },
-        _ => panic!(),
-    }
 
     let width: u32 = 1280;
     let height: u32 = 720;
 
-    let mut pixels = vec![Color::new(0.0, 0.0, 0.0, 1.0); (width * height) as usize];
-    for i in 0..width {
-        for j in 0..height {
-            let red = i as f64 / width as f64;
-            let green = j as f64 / height as f64;
-            pixels[(i + j * width) as usize] = Color::new(red, green, 0.0, 1.0);
+    let camera_pos = Vector3::new(0.0, 0.0, -2.0);
+    let camera_up = Vector3::new(0.0, 1.0, 0.0).normalized();
+    let camera_right = Vector3::new(1.0, 0.0, 0.0).normalized();
+    let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
+
+    let clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
+    let mut pixels = vec![clear_color; (width * height) as usize];
+
+    let aspect = width as f64 / height as f64;
+    for x in 0..width {
+        for y in 0..height {
+            let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
+            let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
+
+            let ray = Ray::new(
+                camera_pos,
+                (camera_forward
+                + (camera_right * norm_x * aspect)
+                + (camera_up * norm_y)).normalized()
+            );
+
+            match sphere.intersect(&ray) {
+                Some((normal, _color)) => {
+                    pixels[(x + y * width) as usize] = Color::new(normal.x * 0.5 + 0.5, normal.y * 0.5 + 0.5, normal.z * 0.5 + 0.5, 1.0);
+                },
+                _ => {},
+            }
         }
     }
 
@@ -92,8 +104,7 @@ fn main() {
     };
 
     let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
-
-    file.write_all(any_as_u8_slice(&header)).expect("Unable to write to file!");
+    file.write_all(any_as_u8_slice(&header)).expect("Unable to write header to file!");
 
     for pixel in pixels {
         file.write_all(&[
