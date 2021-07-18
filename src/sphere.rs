@@ -23,10 +23,9 @@ impl Intersectable for Sphere {
 
         let tca = Vector3::dot(&l, &ray.direction);
 
-        // TODO: This was in a tutorial uncomment it to see what it does
-        // if tca < 0.0 {
-        //     return Option::None;
-        // }
+        if tca < 0.0 {
+            return Option::None;
+        }
 
         let d2 = Vector3::dot(&l, &l) - tca * tca;
         if d2 > self.radius * self.radius {
@@ -54,6 +53,6 @@ impl Intersectable for Sphere {
         let t = t0;
 
         let hit_point = ray.origin + (ray.direction * t);
-        return Option::from(((hit_point - self.position).normalized(), Color::new(1.0, 1.0, 1.0, 1.0)));
+        return Option::from(((hit_point - self.position) / self.radius, Color::new(1.0, 1.0, 1.0, 1.0)));
     }
 }

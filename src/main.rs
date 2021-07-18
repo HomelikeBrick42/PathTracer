@@ -44,12 +44,12 @@ struct BMPHeader {
 }
 
 fn main() {
-    let sphere = Sphere::new(Vector3::new(0.0, 0.0, 0.0), 1.0);
+    let sphere = Sphere::new(Vector3::new(0.0, 0.0, 0.0), 2.5);
 
     let width: u32 = 1280;
     let height: u32 = 720;
 
-    let camera_pos = Vector3::new(0.0, 0.0, -2.0);
+    let camera_pos = Vector3::new(0.0, 0.0, -4.0);
     let camera_up = Vector3::new(0.0, 1.0, 0.0).normalized();
     let camera_right = Vector3::new(1.0, 0.0, 0.0).normalized();
     let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
