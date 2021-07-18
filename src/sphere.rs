@@ -54,7 +54,7 @@ impl Intersectable for Sphere {
         let t = t0;
 
         let hit_point = ray.origin + (ray.direction * t);
-        let normal = (ray.origin - hit_point).normalized();
+        let normal = (hit_point - self.position).normalized();
         return Option::from(Hit::new(hit_point, normal, Color::new(1.0, 1.0, 1.0, 1.0)));
     }
 }
