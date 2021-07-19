@@ -114,14 +114,14 @@ fn main() {
     );
 
     let light_material = Material::new(
-        Color::new(1.0, 0.0, 0.0),
-        Color::new(0.5, 0.5, 0.5),
+        Color::new(1.0, 1.0, 1.0),
+        Color::new(2.5, 2.5, 2.5),
     );
 
     let mut objects = Vec::<Box<dyn Intersectable>>::new();
 
-    objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 0.0, 0.0), 1.0, light_material)));
     objects.push(Box::from(Sphere::new(Vector3::new(2.0, 0.0, 0.0), 2.0, blue_material)));
+    objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 0.0, -1.0), 1.0, light_material)));
 
     let width: u32 = 1280;
     let height: u32 = 720;
@@ -137,6 +137,8 @@ fn main() {
     let mut rng = thread_rng();
 
     let aspect = width as f64 / height as f64;
+
+    let mut i: u64 = 0;
     for y in 0..height {
         let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
         
@@ -152,13 +154,18 @@ fn main() {
 
             let pixel = &mut pixels[(x + y * width) as usize];
 
-            for _ in 0..1000 {
-                *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * 0.01;
+            let num_samples = 1024;
+            for _ in 0..num_samples {
+                *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
             }
 
-            print!("{:.2}%\r", ((x + y * width) as f64 / (width * height) as f64) * 100.0);
+            i += 1;
+            if i % 100 == 0 {
+                print!("Rendering: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
+            }
         }
     }
+    println!("Rendering: 100.00%");
 
     let header = BMPHeader {
         file_type: 0x4D42,
@@ -186,6 +193,7 @@ fn main() {
     let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
     file.write_all(any_as_u8_slice(&header)).expect("Unable to write header to file!");
 
+    i = 0;
     for pixel in pixels {
         file.write_all(&[
             (pixel.r * 255.0) as u8,
@@ -193,5 +201,13 @@ fn main() {
             (pixel.b * 255.0) as u8,
             0 as u8,
         ]).expect("Unable to write to file!");
+
+        i += 1;
+        if i % 100 == 0 {
+            print!("Ouputing: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
+        }
     }
+    println!("Ouputing: 100.00%");
+
+    println!("Done.");
 }
