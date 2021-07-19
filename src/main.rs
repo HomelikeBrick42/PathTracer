@@ -2,12 +2,15 @@ mod vector;
 mod ray;
 mod sphere;
 mod color;
+mod material;
 mod hit;
 
 use crate::vector::{ Vector3 };
 use crate::ray::{ Ray, Intersectable };
 use crate::sphere::{ Sphere };
 use crate::color::{ Color };
+use crate::hit::{ Hit };
+use crate::material::{ Material };
 
 use std::fs::File;
 use std::io::Write;
@@ -44,41 +47,84 @@ struct BMPHeader {
     blue_mask: u32,
 }
 
+fn get_closest_hit(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>) -> Option<Hit> {
+    let mut nearest_hit: Option<Hit> = Option::None;
+
+    for object in objects {
+        match object.intersect(ray) {
+            Some(hit) => {
+                match nearest_hit {
+                    Some(nearest) => {
+                        if hit.distance < nearest.distance {
+                            nearest_hit = Option::from(hit);
+                        }
+                    },
+                    None => {
+                        nearest_hit = Option::from(hit);
+                    }
+                }
+            },
+            None => {}
+        }
+    }
+
+    return nearest_hit;
+}
+
+fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, _depth: u64) -> Color {
+    match get_closest_hit(&ray, &objects) {
+        Some(_hit) => {
+            return Color::new(0.0, 0.0, 0.0);
+        },
+        None => {
+            return Color::new(0.0, 0.0, 0.0);
+        },
+    }
+}
+
 fn main() {
-    let sphere = Sphere::new(Vector3::new(0.0, 0.0, 0.0), 2.5);
+    let blue_material = Material::new(
+        Color::new(0.2, 0.4, 0.8),
+        Color::new(0.0, 0.0, 0.0),
+        0.5,
+    );
+
+    let light_material = Material::new(
+        Color::new(1.0, 1.0, 1.0),
+        Color::new(1.0, 1.0, 1.0),
+        0.0,
+    );
+
+    let mut objects = Vec::<Box<dyn Intersectable>>::new();
+
+    objects.push(Box::from(Sphere::new(Vector3::new(2.5, 0.0, 0.0), 2.0, blue_material)));
+    objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 1.0, -1.0), 1.0, light_material)));
 
     let width: u32 = 1280;
     let height: u32 = 720;
 
-    let camera_pos = Vector3::new(0.0, 0.0, -4.0);
+    let camera_pos = Vector3::new(0.0, 0.0, -5.0);
     let camera_up = Vector3::new(0.0, 1.0, 0.0).normalized();
     let camera_right = Vector3::new(1.0, 0.0, 0.0).normalized();
     let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
 
-    let light_dir = Vector3::new(0.4, -1.0, 0.6).normalized();
-
-    let clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
-    let mut pixels = vec![clear_color; (width * height) as usize];
+    let mut pixels = vec![Color::new(0.0, 0.0, 0.0); (width * height) as usize];
 
     let aspect = width as f64 / height as f64;
-    for x in 0..width {
-        for y in 0..height {
+    for y in 0..height {
+        let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
+        
+        for x in 0..width {
             let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
-            let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
 
             let ray = Ray::new(
                 camera_pos,
                 (camera_forward
-                + (camera_right * norm_x * aspect)
+                + (camera_right * (norm_x * aspect))
                 + (camera_up * norm_y)).normalized()
             );
 
-            match sphere.intersect(&ray) {
-                Some(hit) => {
-                    pixels[(x + y * width) as usize] = hit.color * -Vector3::dot(&light_dir, &hit.normal);
-                },
-                _ => {},
-            }
+            pixels[(x + y * width) as usize] = get_ray_color(&ray, &objects, 0);
         }
     }
 
@@ -112,7 +158,7 @@ fn main() {
             (pixel.r * 255.0) as u8,
             (pixel.g * 255.0) as u8,
             (pixel.b * 255.0) as u8,
-            (pixel.a * 255.0) as u8,
+            0 as u8,
         ]).expect("Unable to write to file!");
     }
 }
