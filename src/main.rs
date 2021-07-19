@@ -15,6 +15,8 @@ use crate::material::{ Material };
 use std::fs::File;
 use std::io::Write;
 
+use rand::{ thread_rng, prelude::RngCore, Rng };
+
 fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     unsafe {
         ::std::slice::from_raw_parts(
@@ -71,10 +73,33 @@ fn get_closest_hit(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>) -> Option
     return nearest_hit;
 }
 
-fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, _depth: u64) -> Color {
+fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut dyn RngCore, depth: u64) -> Color {
     match get_closest_hit(&ray, &objects) {
-        Some(_hit) => {
-            return Color::new(0.0, 0.0, 0.0);
+        Some(hit) => {
+            if depth > 5 {
+                return hit.material.emission;
+            }
+
+            let r1 = rng.gen::<f64>() * std::f64::consts::TAU;
+
+            let r2 = rng.gen::<f64>();
+            let r2s = r2.sqrt();
+
+            let w = hit.normal;
+
+            let tmp = if w.x.abs() > 0.1 {
+                Vector3::new(0.0, 1.0, 0.0)
+            } else {
+                Vector3::new(1.0, 0.0, 0.0)
+            };
+            let u = Vector3::cross(&tmp, &w);
+
+            let v = Vector3::cross(&w, &u);
+
+            let new_dir = u * r1.cos() * r2s + v * r1.sin() * r2s + w * (1.0 - r2).sqrt();
+            let new_ray = Ray::new(hit.position, new_dir.normalized());
+
+            return hit.material.emission + hit.material.diffuse * get_ray_color(&new_ray, objects, rng, depth + 1);
         },
         None => {
             return Color::new(0.0, 0.0, 0.0);
@@ -86,19 +111,17 @@ fn main() {
     let blue_material = Material::new(
         Color::new(0.2, 0.4, 0.8),
         Color::new(0.0, 0.0, 0.0),
-        0.5,
     );
 
     let light_material = Material::new(
-        Color::new(1.0, 1.0, 1.0),
-        Color::new(1.0, 1.0, 1.0),
-        0.0,
+        Color::new(1.0, 0.0, 0.0),
+        Color::new(0.5, 0.5, 0.5),
     );
 
     let mut objects = Vec::<Box<dyn Intersectable>>::new();
 
-    objects.push(Box::from(Sphere::new(Vector3::new(2.5, 0.0, 0.0), 2.0, blue_material)));
-    objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 1.0, -1.0), 1.0, light_material)));
+    objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 0.0, 0.0), 1.0, light_material)));
+    objects.push(Box::from(Sphere::new(Vector3::new(2.0, 0.0, 0.0), 2.0, blue_material)));
 
     let width: u32 = 1280;
     let height: u32 = 720;
@@ -109,6 +132,9 @@ fn main() {
     let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
 
     let mut pixels = vec![Color::new(0.0, 0.0, 0.0); (width * height) as usize];
+
+    // TODO: Seeded per pixel
+    let mut rng = thread_rng();
 
     let aspect = width as f64 / height as f64;
     for y in 0..height {
@@ -124,7 +150,13 @@ fn main() {
                 + (camera_up * norm_y)).normalized()
             );
 
-            pixels[(x + y * width) as usize] = get_ray_color(&ray, &objects, 0);
+            let pixel = &mut pixels[(x + y * width) as usize];
+
+            for _ in 0..1000 {
+                *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * 0.01;
+            }
+
+            print!("{:.2}%\r", ((x + y * width) as f64 / (width * height) as f64) * 100.0);
         }
     }
 
@@ -150,6 +182,7 @@ fn main() {
         blue_mask:  0x00FF0000,
     };
 
+    // TODO: Open this at the start of execution? You dont want to wait for ages then realise the image is not writable
     let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
     file.write_all(any_as_u8_slice(&header)).expect("Unable to write header to file!");
 

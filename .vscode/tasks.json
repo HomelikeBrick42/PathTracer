@@ -7,11 +7,24 @@
             "problemMatcher": [
                 "$rustc"
             ],
+            "group": "build",
+            "label": "Rust: cargo build - path_tracer"
+        },
+        {
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--release"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true,
             },
-            "label": "Rust: cargo build - path_tracer"
+            "label": "Rust: cargo build --release - path_tracer",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
