@@ -28,7 +28,7 @@ fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
 
 #[repr(C, packed(1))]
 struct BMPHeader {
-    file_type: u16,
+    file_type: [u8; 2],
     file_size: u32,
     reserved1: u16,
     reserved2: u16,
@@ -44,9 +44,9 @@ struct BMPHeader {
     vertical_resolution: i32,
     colors_used: u32,
     colors_important: u32,
-    red_mask: u32,
-    green_mask: u32,
-    blue_mask: u32,
+    red_mask: [u8; 4],
+    green_mask: [u8; 4],
+    blue_mask: [u8; 4],
 }
 
 fn get_closest_hit(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>) -> Option<Hit> {
@@ -108,6 +108,9 @@ fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut d
 }
 
 fn main() {
+    // NOTE: Open file here so we know that we will be able to output image after its been generated
+    let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
+
     let blue_material = Material::new(
         Color::new(0.2, 0.4, 0.8),
         Color::new(0.0, 0.0, 0.0),
@@ -168,7 +171,7 @@ fn main() {
     println!("Rendering: 100.00%");
 
     let header = BMPHeader {
-        file_type: 0x4D42,
+        file_type: [0x42, 0x4D],
         file_size: std::mem::size_of::<BMPHeader>() as u32 + (width * height * 4),
         reserved1: 0,
         reserved2: 0,
@@ -184,13 +187,11 @@ fn main() {
         vertical_resolution: 0,
         colors_used: 0,
         colors_important: 0,
-        red_mask:   0x000000FF,
-        green_mask: 0x0000FF00,
-        blue_mask:  0x00FF0000,
+        red_mask:   [0xFF, 0x00, 0x00, 0x00],
+        green_mask: [0x00, 0xFF, 0x00, 0x00],
+        blue_mask:  [0x00, 0x00, 0xFF, 0x00],
     };
 
-    // TODO: Open this at the start of execution? You dont want to wait for ages then realise the image is not writable
-    let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
     file.write_all(any_as_u8_slice(&header)).expect("Unable to write header to file!");
 
     i = 0;
