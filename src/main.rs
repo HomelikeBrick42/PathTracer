@@ -110,6 +110,8 @@ fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut d
 fn main() {
     // NOTE: Open file here so we know that we will be able to output image after its been generated
     let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
+    
+    let mut objects = Vec::<Box<dyn Intersectable>>::new();
 
     let blue_material = Material::new(
         Color::new(0.2, 0.4, 0.8),
@@ -121,8 +123,6 @@ fn main() {
         Color::new(2.5, 2.5, 2.5),
     );
 
-    let mut objects = Vec::<Box<dyn Intersectable>>::new();
-
     objects.push(Box::from(Sphere::new(Vector3::new(2.0, 0.0, 0.0), 2.0, blue_material)));
     objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 0.0, -1.0), 1.0, light_material)));
 
@@ -130,9 +130,10 @@ fn main() {
     let height: u32 = 720;
 
     let camera_pos = Vector3::new(0.0, 0.0, -5.0);
-    let camera_up = Vector3::new(0.0, 1.0, 0.0).normalized();
-    let camera_right = Vector3::new(1.0, 0.0, 0.0).normalized();
     let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
+
+    let camera_right = Vector3::cross(&Vector3::new(0.0, 1.0, 0.0), &camera_forward).normalized();
+    let camera_up = Vector3::cross(&camera_forward, &camera_right).normalized();
 
     let mut pixels = vec![Color::new(0.0, 0.0, 0.0); (width * height) as usize];
 
@@ -157,7 +158,7 @@ fn main() {
 
             let pixel = &mut pixels[(x + y * width) as usize];
 
-            let num_samples = 1024;
+            let num_samples = 256;//1024;
             for _ in 0..num_samples {
                 *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
             }
