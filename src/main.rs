@@ -115,12 +115,117 @@ fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut d
     }
 }
 
+use std::io::prelude::*;
+
 fn main() {
-    // NOTE: Open file here so we know that we will be able to output image after its been generated
-    let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
+    let args: Vec<String> = std::env::args().collect();
+    let scene_path;
+    if args.len() == 1 {
+        scene_path = "test.scene";
+    } else if args.len() > 2 {
+        panic!("Too many arguments!");
+    } else {
+        scene_path = &args[1];
+    }
+
+    let mut scene_file = File::open(scene_path).expect("Unable to open scene file!");
+    let mut scene_source = String::new();
+    scene_file.read_to_string(&mut scene_source).unwrap();
+
+    let mut tokens = Vec::<&str>::new();
+    for line in scene_source.lines() {
+        for token in line.split_whitespace() {
+            tokens.push(token);
+        }
+    }
+
+    let mut token_index: usize = 0;
     
+    let mut width: usize = 0;
+    let mut height: usize = 0;
+    let mut num_samples: usize = 1;
+    let mut camera_position = Vector3::new(0.0, 0.0, 0.0);
+    let mut camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
     let mut objects = Vec::<Box<dyn Intersectable>>::new();
 
+    loop {
+        if token_index >= tokens.len() {
+            break;
+        }
+
+        let mut next = || {
+            let token = &tokens[token_index];
+            token_index += 1;
+            return token;
+        };
+
+        let name = next();
+        match name {
+            &"width" => {
+                assert_eq!(next(), &"=");
+                width = next().parse::<usize>().unwrap();
+            },
+            &"height" => {
+                assert_eq!(next(), &"=");
+                height = next().parse::<usize>().unwrap();
+            },
+            &"samples" => {
+                assert_eq!(next(), &"=");
+                num_samples = next().parse::<usize>().unwrap();
+            },
+            &"camera_position" => {
+                assert_eq!(next(), &"=");
+                assert_eq!(next(), &"{");
+                    let mut position = Vector3::new(0.0, 0.0, 0.0);
+                    position.x = next().parse::<f64>().unwrap();
+                    position.y = next().parse::<f64>().unwrap();
+                    position.z = next().parse::<f64>().unwrap();
+                assert_eq!(next(), &"}");
+                camera_position = position;
+            },
+            &"camera_direction" => {
+                assert_eq!(next(), &"=");
+                assert_eq!(next(), &"{");
+                    let mut direction = Vector3::new(0.0, 0.0, 0.0);
+                    direction.x = next().parse::<f64>().unwrap();
+                    direction.y = next().parse::<f64>().unwrap();
+                    direction.z = next().parse::<f64>().unwrap();
+                assert_eq!(next(), &"}");
+                camera_forward = direction.normalized();
+            },
+            &"Sphere" => {
+                assert_eq!(next(), &"{");
+                    assert_eq!(next(), &"{");
+                        let mut position = Vector3::new(0.0, 0.0, 0.0);
+                        position.x = next().parse::<f64>().unwrap();
+                        position.y = next().parse::<f64>().unwrap();
+                        position.z = next().parse::<f64>().unwrap();
+                    assert_eq!(next(), &"}");
+                        let radius = next().parse::<f64>().unwrap();
+                    assert_eq!(next(), &"{");
+                        let mut diffuse = Color::new(0.0, 0.0, 0.0);
+                        diffuse.r = next().parse::<f64>().unwrap();
+                        diffuse.g = next().parse::<f64>().unwrap();
+                        diffuse.b = next().parse::<f64>().unwrap();
+                    assert_eq!(next(), &"}");
+                    assert_eq!(next(), &"{");
+                        let mut emission = Color::new(0.0, 0.0, 0.0);
+                        emission.r = next().parse::<f64>().unwrap();
+                        emission.g = next().parse::<f64>().unwrap();
+                        emission.b = next().parse::<f64>().unwrap();
+                    assert_eq!(next(), &"}");
+                assert_eq!(next(), &"}");
+
+                objects.push(Box::from(Sphere::new(position, radius, Material::new(diffuse, emission))));
+            },
+            _ => panic!("Unknown name!"),
+        }
+    }
+
+    // NOTE: Open file here so we know that we will be able to output image after its been generated
+    let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
+
+    /*
     let blue_material = Material::new(
         Color::new(0.2, 0.4, 0.8),
         Color::new(0.0, 0.0, 0.0),
@@ -133,12 +238,7 @@ fn main() {
 
     objects.push(Box::from(Sphere::new(Vector3::new(2.0, 0.0, 0.0), 2.0, blue_material)));
     objects.push(Box::from(Sphere::new(Vector3::new(-2.0, 0.0, -1.0), 1.0, light_material)));
-
-    let width: u32 = 1280;
-    let height: u32 = 720;
-
-    let camera_pos = Vector3::new(0.0, 0.0, -5.0);
-    let camera_forward = Vector3::new(0.0, 0.0, 1.0).normalized();
+    */
 
     let camera_right = Vector3::cross(&Vector3::new(0.0, 1.0, 0.0), &camera_forward).normalized();
     let camera_up = Vector3::cross(&camera_forward, &camera_right).normalized();
@@ -150,7 +250,7 @@ fn main() {
 
     let aspect = width as f64 / height as f64;
 
-    let mut i: u64 = 0;
+    let mut i: usize = 0;
     for y in 0..height {
         let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
 
@@ -158,7 +258,7 @@ fn main() {
             let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
 
             let ray = Ray::new(
-                camera_pos,
+                camera_position,
                 (camera_forward
                 + (camera_right * (norm_x * aspect))
                 + (camera_up * norm_y)).normalized()
@@ -166,7 +266,6 @@ fn main() {
 
             let pixel = &mut pixels[(x + y * width) as usize];
 
-            let num_samples = 4096;
             for _ in 0..num_samples {
                 *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
             }
@@ -181,7 +280,7 @@ fn main() {
 
     let header = BMPHeader {
         file_type: [0x42, 0x4D],
-        file_size: std::mem::size_of::<BMPHeader>() as u32 + (width * height * 4),
+        file_size: (std::mem::size_of::<BMPHeader>() + (width * height * 4)) as u32,
         reserved1: 0,
         reserved2: 0,
         bitmap_offset: std::mem::size_of::<BMPHeader>() as u32,

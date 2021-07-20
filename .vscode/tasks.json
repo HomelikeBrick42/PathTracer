@@ -19,7 +19,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true,
+                "isDefault": true
             },
             "label": "Rust: cargo build --release - path_tracer",
             "problemMatcher": [
