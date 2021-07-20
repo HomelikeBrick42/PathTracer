@@ -56,7 +56,10 @@ impl Intersectable for Sphere {
         let t = t0;
 
         let hit_point = ray.origin + (ray.direction * t);
-        let normal = (hit_point - self.position).normalized();
+        let mut normal = (hit_point - self.position).normalized();
+        if Vector3::dot(&normal, &ray.direction) > 0.0 {
+            normal = normal * -1.0;
+        }
         return Option::from(Hit::new(hit_point, normal, self.material, t));
     }
 }

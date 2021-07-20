@@ -76,8 +76,16 @@ fn get_closest_hit(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>) -> Option
 fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut dyn RngCore, depth: u64) -> Color {
     match get_closest_hit(&ray, &objects) {
         Some(hit) => {
+            let mut color = hit.material.diffuse;
+
             if depth > 5 {
-                return hit.material.emission;
+                let rand: f64 = rng.gen();
+                let max_component = color.r.max(color.g.max(color.b));
+                if rand < max_component && depth < 500 {
+                    color = color * (1.0 / max_component);
+                } else {
+                    return hit.material.emission;
+                }
             }
 
             let r1 = rng.gen::<f64>() * std::f64::consts::TAU;
@@ -99,7 +107,7 @@ fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut d
             let new_dir = u * r1.cos() * r2s + v * r1.sin() * r2s + w * (1.0 - r2).sqrt();
             let new_ray = Ray::new(hit.position, new_dir.normalized());
 
-            return hit.material.emission + hit.material.diffuse * get_ray_color(&new_ray, objects, rng, depth + 1);
+            return hit.material.emission + color * get_ray_color(&new_ray, objects, rng, depth + 1);
         },
         None => {
             return Color::new(0.0, 0.0, 0.0);
@@ -145,7 +153,7 @@ fn main() {
     let mut i: u64 = 0;
     for y in 0..height {
         let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
-        
+
         for x in 0..width {
             let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
 
@@ -158,13 +166,13 @@ fn main() {
 
             let pixel = &mut pixels[(x + y * width) as usize];
 
-            let num_samples = 256;//1024;
+            let num_samples = 4096;
             for _ in 0..num_samples {
                 *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
             }
 
             i += 1;
-            if i % 100 == 0 {
+            if i % 50 == 0 {
                 print!("Rendering: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
             }
         }
@@ -205,7 +213,7 @@ fn main() {
         ]).expect("Unable to write to file!");
 
         i += 1;
-        if i % 100 == 0 {
+        if i % 500 == 0 {
             print!("Ouputing: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
         }
     }
