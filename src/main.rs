@@ -173,7 +173,7 @@ fn main() {
 
             i += 1;
             if i % 50 == 0 {
-                print!("Rendering: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
+                print!("Rendering: {:.2}% ({} of {})\r", (i as f64 / (width * height) as f64) * 100.0, i, width * height);
             }
         }
     }
@@ -214,7 +214,7 @@ fn main() {
 
         i += 1;
         if i % 500 == 0 {
-            print!("Ouputing: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
+            print!("Ouputing: {:.2}% ({} of {})\r", (i as f64 / (width * height) as f64) * 100.0, i, width * height);
         }
     }
     println!("Ouputing: 100.00%");
