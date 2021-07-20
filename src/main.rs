@@ -115,12 +115,10 @@ fn get_ray_color(ray: &Ray, objects: &Vec::<Box<dyn Intersectable>>, rng: &mut d
     }
 }
 
-use std::sync::mpsc;
-
 fn main() {
     // NOTE: Open file here so we know that we will be able to output image after its been generated
     let mut file = File::create("./out_image.bmp").expect("Unable to create file!");
-
+    
     let mut objects = Vec::<Box<dyn Intersectable>>::new();
 
     let blue_material = Material::new(
@@ -147,46 +145,39 @@ fn main() {
 
     let mut pixels = vec![Color::new(0.0, 0.0, 0.0); (width * height) as usize];
 
+    // TODO: Seeded per pixel
+    let mut rng = thread_rng();
+
     let aspect = width as f64 / height as f64;
 
-    let (sender, receiver) = mpsc::channel();
-
+    let mut i: u64 = 0;
     for y in 0..height {
         let norm_y = (y as f64 / height as f64) * 2.0 - 1.0;
 
-        let sender_copy = sender.clone();
-        std::thread::spawn(move || {
-            let mut rng = thread_rng();
+        for x in 0..width {
+            let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
 
-            for x in 0..width {
-                let norm_x = (x as f64 / width as f64) * 2.0 - 1.0;
+            let ray = Ray::new(
+                camera_pos,
+                (camera_forward
+                + (camera_right * (norm_x * aspect))
+                + (camera_up * norm_y)).normalized()
+            );
 
-                let ray = Ray::new(
-                    camera_pos,
-                    (camera_forward
-                    + (camera_right * (norm_x * aspect))
-                    + (camera_up * norm_y)).normalized()
-                );
+            let pixel = &mut pixels[(x + y * width) as usize];
 
-                let mut pixel = Color::new(0.0, 0.0, 0.0);
-
-                let num_samples = 4096;
-                for _ in 0..num_samples {
-                    pixel = pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
-                }
-
-                sender_copy.send(((x + y * height) as usize, pixel)).unwrap();
+            let num_samples = 4096;
+            for _ in 0..num_samples {
+                *pixel = *pixel + get_ray_color(&ray, &objects, &mut rng, 0) * (1.0 / num_samples as f64);
             }
-        });
-    }
 
-    let mut i: u64 = 0;
-    for (index, color) in receiver {
-        pixels[index as usize] = color;
-        print!("Rendered: {:.2}%\r", i as f64 / (width * height) as f64);
-        i += 1;
+            i += 1;
+            if i % 50 == 0 {
+                print!("Rendering: {:.2}%\r", (i as f64 / (width * height) as f64) * 100.0);
+            }
+        }
     }
-    println!("Rendered: 100.00%");
+    println!("Rendering: 100.00%");
 
     let header = BMPHeader {
         file_type: [0x42, 0x4D],

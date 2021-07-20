@@ -16,8 +16,6 @@ impl Ray {
     }
 }
 
-use std::marker::{ Send, Sync };
-
-pub trait Intersectable: Send + Sync {
+pub trait Intersectable {
     fn intersect(&self, ray: &Ray) -> Option<Hit>;
 }
